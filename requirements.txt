@@ -1,0 +1,6 @@
+# opusfleet testbed + server pipeline
+confluent-kafka==2.6.1      # librdkafka bindings; wheels for linux x86_64 + aarch64
+minio==7.2.10               # S3-compatible client (also talks to real S3)
+opuslib==3.0.1              # ctypes binding; see server/opus_ctl.py for the arm64 CTL fix
+numpy==2.1.3                # replaces audioop, removed from Python 3.13
+websockets==13.1

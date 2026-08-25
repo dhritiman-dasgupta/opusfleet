@@ -1,0 +1,20 @@
+# secrets
+.env
+.env.*
+!.env.example
+*.pem
+aws.txt
+
+# python
+.venv/
+**/__pycache__/
+*.pyc
+
+# generated test audio (rebuild with sim/make_samples.sh)
+sim/samples/
+recordings/
+*.wav
+*.opus
+
+*.log
+.DS_Store

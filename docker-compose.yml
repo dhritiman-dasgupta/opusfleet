@@ -1,0 +1,170 @@
+# opusfleet pipeline: device sockets -> Kafka -> {segments, levels, live audio} -> API
+#
+#   docker compose up -d --build                 bring the stack up
+#   docker compose --profile load up fleet       point 500 simulated devices at it
+#   docker compose logs -f segmenter             watch segments land
+#
+# Ports on the host: 6000 device ingest | 8080 API | 8081 live audio
+#                    9001 MinIO console | 29092 Kafka (for host-side tools)
+
+name: opusfleet
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+  environment: &app-env
+    KAFKA_BOOTSTRAP: kafka:9092
+    S3_ENDPOINT: minio:9000
+    S3_ACCESS_KEY: ${MINIO_USER:-opusfleet}
+    S3_SECRET_KEY: ${MINIO_PASSWORD:-opusfleet-dev-secret}
+    S3_BUCKET: ${S3_BUCKET:-opusfleet-recordings}
+    S3_SECURE: "0"
+    SEGMENT_SECONDS: ${SEGMENT_SECONDS:-60}
+    SEGMENT_FORMAT: ${SEGMENT_FORMAT:-opus}
+  depends_on:
+    # service_healthy on kafka is not enough: kafka-init creates the topics, and
+    # a consumer that subscribes before its topic exists will not see it until
+    # librdkafka's metadata refresh (default 5 min) comes round.
+    kafka-init: {condition: service_completed_successfully}
+    minio: {condition: service_healthy}
+  restart: unless-stopped
+
+services:
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: opusfleet-kafka
+    ports:
+      - "29092:29092"          # host-side access for kafka CLI tools / debugging
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,PLAINTEXT_HOST://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # audio.raw is a firehose of small messages; hold 6 h and cap the volume
+      # so a stalled consumer cannot fill the disk.
+      KAFKA_LOG_RETENTION_HOURS: ${KAFKA_RETENTION_HOURS:-6}
+      KAFKA_LOG_RETENTION_BYTES: ${KAFKA_RETENTION_BYTES:-21474836480}
+      KAFKA_NUM_PARTITIONS: 12
+      KAFKA_HEAP_OPTS: -Xmx2g -Xms2g
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
+  kafka-init:
+    image: apache/kafka:4.0.0
+    container_name: opusfleet-kafka-init
+    depends_on:
+      kafka: {condition: service_healthy}
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        K=/opt/kafka/bin/kafka-topics.sh
+        B=kafka:9092
+        # audio.raw carries every frame -- partition it widely so the levels and
+        # segmenter groups can scale out. The rest are low volume.
+        $$K --bootstrap-server $$B --create --if-not-exists --topic audio.raw     --partitions 12 --replication-factor 1
+        $$K --bootstrap-server $$B --create --if-not-exists --topic device.stat   --partitions 3  --replication-factor 1
+        $$K --bootstrap-server $$B --create --if-not-exists --topic device.events --partitions 3  --replication-factor 1
+        $$K --bootstrap-server $$B --create --if-not-exists --topic device.levels --partitions 3  --replication-factor 1
+        echo "--- topics ---"; $$K --bootstrap-server $$B --list
+    restart: on-failure
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: opusfleet-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"           # web console: browse recordings by IMEI/date
+    environment:
+      MINIO_ROOT_USER: ${MINIO_USER:-opusfleet}
+      MINIO_ROOT_PASSWORD: ${MINIO_PASSWORD:-opusfleet-dev-secret}
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "mc ready local || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  ingest:
+    <<: *app
+    container_name: opusfleet-ingest
+    command: ["ingest"]
+    ports:
+      - "6000:6000"
+    environment:
+      <<: *app-env
+      INGEST_PORT: "6000"
+
+  segmenter:
+    <<: *app
+    container_name: opusfleet-segmenter
+    command: ["segmenter"]
+
+  levels:
+    <<: *app
+    # deliberately no container_name: this is the stage that scales with fleet
+    # size (it is the only consumer that decodes Opus), and docker refuses to
+    # start replicas that all want the same fixed name.
+    command: ["levels"]
+
+  live:
+    <<: *app
+    container_name: opusfleet-live
+    command: ["live"]
+    ports:
+      - "8081:8081"
+
+  api:
+    <<: *app
+    container_name: opusfleet-api
+    command: ["api"]
+    ports:
+      - "8080:8080"
+
+  # Load generator. Not started by default -- `docker compose --profile load up fleet`
+  fleet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opusfleet-fleet
+    profiles: ["load"]
+    depends_on:
+      ingest: {condition: service_started}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sh sim/make_samples.sh
+        exec python -m sim.fleet --host ingest --port 6000 \
+          -n $${FLEET_DEVICES:-500} -w $${FLEET_WORKERS:-4} \
+          --loss $${FLEET_LOSS:-0} --ramp $${FLEET_RAMP:-30} \
+          --duration $${FLEET_DURATION:-0}
+    environment:
+      FLEET_DEVICES: ${FLEET_DEVICES:-500}
+      FLEET_WORKERS: ${FLEET_WORKERS:-4}
+      FLEET_LOSS: ${FLEET_LOSS:-0}
+      FLEET_RAMP: ${FLEET_RAMP:-30}
+      FLEET_DURATION: ${FLEET_DURATION:-0}
+
+volumes:
+  kafka-data:
+  minio-data:

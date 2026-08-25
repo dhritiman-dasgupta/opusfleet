@@ -1,0 +1,75 @@
+# Production overlay for a single VPS (sized for ~4 vCPU / 16 GB / 200 GB).
+#
+#   docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml up -d
+#
+# Differences from local:
+#   * only the device port is world-reachable; API/live/MinIO sit behind Caddy on 443
+#   * Kafka and MinIO bind to loopback only -- never expose a broker to the internet
+#   * resource limits, so a runaway consumer cannot starve ingest
+#   * more levels replicas, since decode is the stage that scales with fleet size
+
+services:
+  kafka:
+    ports: !override
+      - "127.0.0.1:29092:29092"
+    environment:
+      KAFKA_HEAP_OPTS: -Xmx4g -Xms4g
+      KAFKA_LOG_RETENTION_HOURS: 12
+      KAFKA_LOG_RETENTION_BYTES: 53687091200        # 50 GB ceiling on audio.raw
+    deploy:
+      resources:
+        limits: {cpus: "2.0", memory: 6g}
+
+  minio:
+    ports: !override
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 2g}
+
+  ingest:
+    ports:
+      - "0.0.0.0:6000:6000"                         # the only publicly open app port
+    deploy:
+      resources:
+        limits: {cpus: "1.5", memory: 1g}
+
+  live:
+    ports: !override
+      - "127.0.0.1:8081:8081"
+
+  api:
+    ports: !override
+      - "127.0.0.1:8080:8080"
+
+  levels:
+    # Measured: one replica sustains ~5k msg/s; 500 devices produce 25k msg/s.
+    # Roughly one replica per 100 devices. audio.raw has 12 partitions, so this
+    # scales to 12 before partition count becomes the ceiling.
+    deploy:
+      replicas: 5
+      resources:
+        limits: {cpus: "1.0", memory: 1g}
+
+  segmenter:
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 2g}
+
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: opusfleet-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [api, live]
+
+volumes:
+  caddy-data:
+  caddy-config:

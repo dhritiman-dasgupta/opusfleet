@@ -1,0 +1,308 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 820" width="1440" height="820" role="img" aria-label="opusfleet system architecture">
+  <title>opusfleet — system architecture</title>
+  <style>
+    :root{
+      --bg:#ffffff; --panel:#f6f8fb; --card:#ffffff; --stroke:#e1e8f0; --pstroke:#cfdae6;
+      --ink:#111a24; --mut:#5a6b7c; --faint:#7d8a98; --wire:#8494a4;
+      --ok:#5f8f0c; --okbg:#f2f8e6; --accent:#7A34F5; --accentbg:#f4efff; --warn:#d1620a;
+      --mono:#44515e;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg:#0d1117; --panel:#151b23; --card:#1a212b; --stroke:#2c3542; --pstroke:#2c3542;
+        --ink:#e8eef5; --mut:#9aa7b4; --faint:#76838f; --wire:#7d8b99;
+        --ok:#9fd13f; --okbg:#1d2a14; --accent:#b494ff; --accentbg:#221a38; --warn:#f0913f;
+        --mono:#a9b6c3;
+      }
+    }
+    .t{font-family:Inter,ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+    .m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .h1{font-size:28px;font-weight:800;fill:var(--ink)}
+    .sub{font-size:14px;fill:var(--mut)}
+    .plabel{font-size:11px;font-weight:800;fill:var(--faint);letter-spacing:1.5px}
+    .name{font-size:14.5px;font-weight:700;fill:var(--ink)}
+    .name2{font-size:13px;font-weight:700;fill:var(--ink)}
+    .d{font-size:11.5px;fill:var(--mut)}
+    .dm{font-size:11px;fill:var(--mono)}
+    .tiny{font-size:10.5px;fill:var(--faint)}
+    .ok{font-size:11.5px;font-weight:700;fill:var(--ok)}
+    .acc{font-size:11.5px;font-weight:700;fill:var(--accent)}
+    .warn{font-size:11.5px;font-weight:700;fill:var(--warn)}
+    .big{font-size:21px;font-weight:800;fill:var(--ink)}
+    .flow{font-size:10.5px;font-weight:700;fill:var(--mut)}
+    .panel{fill:var(--panel);stroke:var(--pstroke);stroke-width:1.4;stroke-dasharray:5 5}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.4}
+    .wire{stroke:var(--wire);stroke-width:2;fill:none}
+    .awire{stroke:var(--accent);stroke-width:2;fill:none}
+  </style>
+  <defs>
+    <linearGradient id="gTeal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5AD8C8"/><stop offset="1" stop-color="#0E9488"/></linearGradient>
+    <linearGradient id="gOrange" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB066"/><stop offset="1" stop-color="#E8730B"/></linearGradient>
+    <linearGradient id="gPurple" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B58CFF"/><stop offset="1" stop-color="#7A34F5"/></linearGradient>
+    <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#AEDC55"/><stop offset="1" stop-color="#6C9C0E"/></linearGradient>
+    <linearGradient id="gDark" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5C6470"/><stop offset="1" stop-color="#191D24"/></linearGradient>
+    <linearGradient id="gBlue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6FC2F7"/><stop offset="1" stop-color="#1B7FD1"/></linearGradient>
+    <linearGradient id="gRed" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EE7A90"/><stop offset="1" stop-color="#B32340"/></linearGradient>
+    <linearGradient id="gBar" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0E9488"/><stop offset=".35" stop-color="#7A34F5"/>
+      <stop offset=".7" stop-color="#E8730B"/><stop offset="1" stop-color="#B32340"/>
+    </linearGradient>
+    <filter id="sh" x="-25%" y="-25%" width="150%" height="160%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#0b1a2b" flood-opacity="0.08"/>
+    </filter>
+    <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--wire)"/>
+    </marker>
+    <marker id="ap" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+    </marker>
+
+    <symbol id="icMic" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"><rect x="18.5" y="8" width="11" height="21" rx="5.5" fill="#fff" stroke="none"/><path d="M14 23a10 10 0 0 0 20 0"/><path d="M24 33v6M18.5 39h11"/></g></symbol>
+    <symbol id="icChip" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="14.5" y="14.5" width="19" height="19" rx="3.5"/><rect x="20.5" y="20.5" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/><path d="M19.5 14.5V9.5M24 14.5V9.5M28.5 14.5V9.5M19.5 33.5v5M24 33.5v5M28.5 33.5v5M14.5 19.5H9.5M14.5 24H9.5M14.5 28.5H9.5M33.5 19.5h5M33.5 24h5M33.5 28.5h5"/></g></symbol>
+    <symbol id="icTower" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"><path d="M24 19v19M18 38h12"/><path d="M17.5 15.5a9 9 0 0 1 13 0"/><path d="M12.5 10.5a16 16 0 0 1 23 0"/><circle cx="24" cy="20.5" r="3" fill="#fff" stroke="none"/></g></symbol>
+    <symbol id="icBot" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><rect x="10.5" y="17" width="27" height="18" rx="5"/><circle cx="18.5" cy="26" r="2.8" fill="#fff" stroke="none"/><circle cx="29.5" cy="26" r="2.8" fill="#fff" stroke="none"/><path d="M24 17v-5.5M19.5 39.5h9"/><circle cx="24" cy="10" r="2.2" fill="#fff" stroke="none"/></g></symbol>
+    <symbol id="icServer" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="9" y="10.5" width="30" height="11.5" rx="2.8"/><rect x="9" y="26" width="30" height="11.5" rx="2.8"/><circle cx="15" cy="16.2" r="2" fill="#fff" stroke="none"/><circle cx="15" cy="31.7" r="2" fill="#fff" stroke="none"/><path d="M21.5 16.2h12M21.5 31.7h12"/></g></symbol>
+    <symbol id="icKafka" viewBox="0 0 48 48"><g fill="#fff"><circle cx="15" cy="10.5" r="4.4"/><circle cx="15" cy="37.5" r="4.4"/><circle cx="33.5" cy="24" r="5.6"/><rect x="13.2" y="13" width="3.6" height="22" rx="1.8"/><path d="M18 13.8l11 6.6M18 34.2l11-6.6" stroke="#fff" stroke-width="3" stroke-linecap="round"/></g></symbol>
+    <symbol id="icLayers" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M24 8.5L39.5 16 24 23.5 8.5 16z"/><path d="M9.5 23.5L24 30.5l14.5-7"/><path d="M9.5 31L24 38l14.5-7"/></g></symbol>
+    <symbol id="icWave" viewBox="0 0 48 48"><g stroke="#fff" stroke-width="3.2" stroke-linecap="round"><path d="M9 21v6M16 15.5v17M23 9.5v29M30 14v20M37 20v8"/></g></symbol>
+    <symbol id="icBolt" viewBox="0 0 48 48"><path d="M27 5.5L11.5 28.5H21L19.5 42.5 36.5 20H26.5z" fill="#fff"/></symbol>
+    <symbol id="icApi" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 11.5c-5.5 0-4.5 10.5-9.5 12.5 5 2 4 12.5 9.5 12.5M29.5 11.5c5.5 0 4.5 10.5 9.5 12.5-5 2-4 12.5-9.5 12.5"/></g></symbol>
+    <symbol id="icBucket" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"><path d="M10.5 13.5h27l-3 24a2.5 2.5 0 0 1-2.5 2.2H16a2.5 2.5 0 0 1-2.5-2.2z"/><ellipse cx="24" cy="13" rx="13.5" ry="4.5"/><path d="M17 24h14M18 31h12" stroke-width="2.3"/></g></symbol>
+    <symbol id="icBrowser" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><rect x="6.5" y="10" width="35" height="28" rx="3.5"/><path d="M6.5 18.5h35"/><circle cx="12" cy="14.2" r="1.7" fill="#fff" stroke="none"/><circle cx="17.5" cy="14.2" r="1.7" fill="#fff" stroke="none"/><path d="M13 26h9M13 32h20"/></g></symbol>
+    <symbol id="icDocker" viewBox="0 0 48 48"><g fill="#fff"><rect x="11" y="21.5" width="6.4" height="6" rx="1"/><rect x="18.4" y="21.5" width="6.4" height="6" rx="1"/><rect x="25.8" y="21.5" width="6.4" height="6" rx="1"/><rect x="18.4" y="14.6" width="6.4" height="6" rx="1"/><path d="M6.5 29.5h32.5c.4 5.9-4.6 10-11.6 10-8 0-15.4-3.3-20.9-10z"/><path d="M34.5 21.6c2.9-2.1 6-.8 6.8.6-1.2 2.7-4.2 3.4-6.8 2.9z"/></g></symbol>
+    <symbol id="icShield" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round"><path d="M24 7l14 5v11c0 9-6 15.5-14 18-8-2.5-14-9-14-18V12z"/><path d="M17.5 24l4.5 4.5 9-9"/></g></symbol>
+  </defs>
+
+  <rect width="1440" height="820" fill="var(--bg)"/>
+  <rect x="0" y="0" width="1440" height="5" fill="url(#gBar)"/>
+
+  <text class="t h1" x="44" y="56">opusfleet</text>
+  <text class="t sub" x="176" y="56">— Opus audio from a device fleet, split along Kafka</text>
+  <text class="t sub" x="44" y="82">Ingest parses and produces; decoding, segmenting and serving each scale on their own. Every box below runs as a container.</text>
+
+  <!-- ============================ panels ============================ -->
+  <g>
+    <rect class="panel" x="40"   y="112" width="260" height="568" rx="13"/>
+    <rect class="panel" x="356"  y="112" width="200" height="568" rx="13"/>
+    <rect class="panel" x="612"  y="112" width="236" height="568" rx="13"/>
+    <rect class="panel" x="904"  y="112" width="240" height="568" rx="13"/>
+    <rect class="panel" x="1200" y="112" width="200" height="568" rx="13"/>
+  </g>
+  <g>
+    <g><circle cx="64"   cy="136" r="10" fill="url(#gTeal)"/>  <text class="t" x="64"   y="140" font-size="11.5" font-weight="800" fill="#fff" text-anchor="middle">1</text></g>
+    <g><circle cx="380"  cy="136" r="10" fill="url(#gOrange)"/><text class="t" x="380"  y="140" font-size="11.5" font-weight="800" fill="#fff" text-anchor="middle">2</text></g>
+    <g><circle cx="636"  cy="136" r="10" fill="url(#gDark)"/>  <text class="t" x="636"  y="140" font-size="11.5" font-weight="800" fill="#fff" text-anchor="middle">3</text></g>
+    <g><circle cx="928"  cy="136" r="10" fill="url(#gPurple)"/><text class="t" x="928"  y="140" font-size="11.5" font-weight="800" fill="#fff" text-anchor="middle">4</text></g>
+    <g><circle cx="1224" cy="136" r="10" fill="url(#gBlue)"/>  <text class="t" x="1224" y="140" font-size="11.5" font-weight="800" fill="#fff" text-anchor="middle">5</text></g>
+  </g>
+  <g class="t plabel">
+    <text x="82"   y="140">EDGE · DEVICES</text>
+    <text x="398"  y="140">INGEST</text>
+    <text x="654"  y="140">EVENT BUS</text>
+    <text x="946"  y="140">CONSUMERS</text>
+    <text x="1242" y="140">SERVING</text>
+  </g>
+
+  <!-- ===================== 1 · edge ===================== -->
+  <g filter="url(#sh)"><rect class="card" x="58" y="164" width="224" height="128" rx="11"/></g>
+  <rect x="76" y="182" width="42" height="42" rx="10" fill="url(#gTeal)"/><use href="#icMic" x="76" y="182" width="42" height="42"/>
+  <text class="t name" x="128" y="199">MEMS microphone</text>
+  <text class="t d"    x="128" y="217">I2S · 48 kHz mono</text>
+  <rect x="76" y="236" width="32" height="32" rx="8" fill="url(#gTeal)"/><use href="#icChip" x="76" y="236" width="32" height="32"/>
+  <text class="t name2" x="118" y="249">MCU · Opus encode</text>
+  <text class="t d"     x="118" y="266">20 ms frames · 64 kbps</text>
+  <text class="t tiny"  x="76"  y="284">≈ 8 KB/s on the wire per device</text>
+
+  <g filter="url(#sh)"><rect class="card" x="58" y="308" width="224" height="92" rx="11"/></g>
+  <rect x="76" y="326" width="42" height="42" rx="10" fill="url(#gTeal)"/><use href="#icTower" x="76" y="326" width="42" height="42"/>
+  <text class="t name" x="128" y="343">Cellular modem</text>
+  <text class="t d"    x="128" y="361">store-and-forward</text>
+  <text class="t tiny" x="76"  y="390">buffers through outages, then bursts</text>
+
+  <g filter="url(#sh)"><rect x="58" y="416" width="224" height="124" rx="11" fill="var(--accentbg)" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 4"/></g>
+  <rect x="76" y="434" width="42" height="42" rx="10" fill="url(#gPurple)"/><use href="#icBot" x="76" y="434" width="42" height="42"/>
+  <text class="t name" x="128" y="451">Fleet simulator</text>
+  <text class="t acc"  x="128" y="469">500+ virtual devices</text>
+  <text class="t d"    x="76"  y="497">Identical wire format — the server</text>
+  <text class="t d"    x="76"  y="513">cannot tell it from hardware.</text>
+  <text class="t tiny" x="76"  y="530">--loss · --stall · --drop-hello</text>
+
+  <text class="t plabel" x="58" y="568">WIRE FORMAT</text>
+  <g class="m dm">
+    <text x="58" y="590">[BE16 len][payload]</text>
+    <text x="58" y="609">HELLO:&lt;id&gt;  STAT:{json}</text>
+    <text x="58" y="628">RTP(12B) + Opus packet</text>
+  </g>
+  <text class="t tiny" x="58" y="650">RTP seq survives into every consumer,</text>
+  <text class="t tiny" x="58" y="664">so loss stays measurable downstream.</text>
+
+  <!-- ===================== 2 · ingest ===================== -->
+  <g filter="url(#sh)"><rect class="card" x="374" y="164" width="164" height="184" rx="11"/></g>
+  <rect x="432" y="184" width="48" height="48" rx="11" fill="url(#gOrange)"/><use href="#icServer" x="432" y="184" width="48" height="48"/>
+  <text class="t name"  x="456" y="256" text-anchor="middle">ingest</text>
+  <text class="t d"     x="456" y="274" text-anchor="middle">TCP :6000</text>
+  <line x1="394" y1="290" x2="518" y2="290" stroke="var(--stroke)" stroke-width="1.4"/>
+  <text class="t d"     x="456" y="310" text-anchor="middle">parse framing → produce</text>
+  <text class="t warn"  x="456" y="331" text-anchor="middle">never decodes audio</text>
+
+  <g filter="url(#sh)"><rect class="card" x="374" y="368" width="164" height="126" rx="11"/></g>
+  <text class="t plabel" x="456" y="392" text-anchor="middle">MEASURED · 500 DEVICES</text>
+  <text class="t big"    x="456" y="422" text-anchor="middle">24,868 fps</text>
+  <text class="t d"      x="456" y="442" text-anchor="middle">25.9 Mbps sustained</text>
+  <g><rect x="392" y="456" width="128" height="24" rx="12" fill="var(--okbg)"/>
+     <text class="t ok" x="456" y="472" text-anchor="middle">0 frames dropped</text></g>
+
+  <g filter="url(#sh)"><rect class="card" x="374" y="514" width="164" height="112" rx="11"/></g>
+  <rect x="392" y="532" width="30" height="30" rx="8" fill="url(#gOrange)"/><use href="#icShield" x="392" y="532" width="30" height="30"/>
+  <text class="t name2" x="430" y="552">Backpressure</text>
+  <text class="t d"     x="392" y="582">A slow upload can no longer</text>
+  <text class="t d"     x="392" y="598">reach back to the microphone.</text>
+  <text class="t tiny"  x="392" y="616">producer queue peak: 1,671 / 1M</text>
+
+  <!-- ===================== 3 · kafka ===================== -->
+  <g filter="url(#sh)"><rect class="card" x="630" y="164" width="200" height="118" rx="11"/></g>
+  <rect x="656" y="186" width="46" height="46" rx="11" fill="url(#gDark)"/><use href="#icKafka" x="656" y="186" width="46" height="46"/>
+  <text class="t name" x="714" y="204">Apache Kafka</text>
+  <text class="t d"    x="714" y="222">4.0 · KRaft</text>
+  <text class="t tiny" x="656" y="256">no ZooKeeper · single node</text>
+  <text class="t tiny" x="656" y="272">retention capped by time and bytes</text>
+
+  <g filter="url(#sh)"><rect x="630" y="298" width="200" height="52" rx="9" fill="var(--accentbg)" stroke="var(--accent)" stroke-width="1.5"/></g>
+  <text class="m" x="646" y="320" font-size="12.5" font-weight="700" fill="var(--accent)">audio.raw</text>
+  <text class="t tiny" x="646" y="338">12 partitions · keyed by device id</text>
+
+  <g filter="url(#sh)">
+    <rect class="card" x="630" y="360" width="200" height="36" rx="9"/>
+    <rect class="card" x="630" y="402" width="200" height="36" rx="9"/>
+    <rect class="card" x="630" y="444" width="200" height="36" rx="9"/>
+  </g>
+  <g class="m" font-size="12" fill="var(--mono)">
+    <text x="646" y="383">device.stat</text>
+    <text x="646" y="425">device.events</text>
+    <text x="646" y="467">device.levels</text>
+  </g>
+
+  <g filter="url(#sh)"><rect class="card" x="630" y="500" width="200" height="128" rx="11"/></g>
+  <text class="t plabel" x="648" y="524">WHY A BUS</text>
+  <text class="t d" x="648" y="546">Add transcription, alerting or</text>
+  <text class="t d" x="648" y="562">analytics as a new consumer —</text>
+  <text class="t d" x="648" y="578">the hot path never changes.</text>
+  <line x1="648" y1="592" x2="812" y2="592" stroke="var(--stroke)" stroke-width="1.4"/>
+  <text class="t tiny" x="648" y="611">Restart or redeploy any consumer</text>
+  <text class="t tiny" x="648" y="624">without dropping a device socket.</text>
+
+  <!-- ===================== 4 · consumers ===================== -->
+  <g filter="url(#sh)"><rect class="card" x="922" y="164" width="204" height="104" rx="11"/></g>
+  <rect x="940" y="182" width="40" height="40" rx="9" fill="url(#gGreen)"/><use href="#icLayers" x="940" y="182" width="40" height="40"/>
+  <text class="t name2" x="990" y="198">segmenter</text>
+  <text class="t d"     x="990" y="215">re-mux → Ogg Opus</text>
+  <text class="t ok"    x="940" y="240">never decodes · 12× smaller</text>
+  <text class="t tiny"  x="940" y="257">RFC 7845 · bit-identical packets</text>
+
+  <g filter="url(#sh)"><rect x="922" y="284" width="204" height="120" rx="11" fill="var(--card)" stroke="var(--accent)" stroke-width="1.8"/></g>
+  <rect x="940" y="302" width="40" height="40" rx="9" fill="url(#gPurple)"/><use href="#icWave" x="940" y="302" width="40" height="40"/>
+  <text class="t name2" x="990" y="318">levels</text>
+  <text class="t d"     x="990" y="335">decode → dBFS/second</text>
+  <text class="t acc"   x="940" y="360">the only stage that scales</text>
+  <text class="t d"     x="940" y="378">1 replica per ~100 devices</text>
+  <text class="t tiny"  x="940" y="394">1→4 replicas drained 756k backlog</text>
+
+  <g filter="url(#sh)"><rect class="card" x="922" y="420" width="204" height="96" rx="11"/></g>
+  <rect x="940" y="438" width="40" height="40" rx="9" fill="url(#gOrange)"/><use href="#icBolt" x="940" y="438" width="40" height="40"/>
+  <text class="t name2" x="990" y="454">live</text>
+  <text class="t d"     x="990" y="471">WebSocket :8081</text>
+  <text class="t tiny"  x="940" y="497">decodes only what is being watched</text>
+
+  <g filter="url(#sh)"><rect class="card" x="922" y="532" width="204" height="96" rx="11"/></g>
+  <rect x="940" y="550" width="40" height="40" rx="9" fill="url(#gOrange)"/><use href="#icApi" x="940" y="550" width="40" height="40"/>
+  <text class="t name2" x="990" y="566">api</text>
+  <text class="t d"     x="990" y="583">REST :8080</text>
+  <text class="t tiny"  x="940" y="609">holds no state — rebuilds it from</text>
+  <text class="t tiny"  x="940" y="622">the topics on every restart</text>
+
+  <!-- ===================== 5 · serving ===================== -->
+  <g filter="url(#sh)"><rect class="card" x="1218" y="164" width="164" height="140" rx="11"/></g>
+  <rect x="1236" y="182" width="42" height="42" rx="10" fill="url(#gRed)"/><use href="#icBucket" x="1236" y="182" width="42" height="42"/>
+  <text class="t name2" x="1288" y="199">MinIO</text>
+  <text class="t d"     x="1288" y="216">or Amazon S3</text>
+  <g class="m" font-size="10.5" fill="var(--mono)">
+    <text x="1236" y="245">&lt;id&gt;/&lt;date&gt;/</text>
+    <text x="1236" y="261">&lt;time&gt;_&lt;secs&gt;s.opus</text>
+  </g>
+  <text class="t tiny" x="1236" y="281">presigned URLs</text>
+  <text class="t tiny" x="1236" y="295">any S3-compatible endpoint</text>
+
+  <g filter="url(#sh)"><rect class="card" x="1218" y="320" width="164" height="104" rx="11"/></g>
+  <text class="t plabel" x="1236" y="343">STORAGE COST</text>
+  <text class="t d"    x="1236" y="364">WAV 48 kHz</text>
+  <text class="t d"    x="1366" y="364" text-anchor="end">345 MB/h</text>
+  <text class="t ok"   x="1236" y="385">Ogg Opus</text>
+  <text class="t ok"   x="1366" y="385" text-anchor="end">28 MB/h</text>
+  <line x1="1236" y1="396" x2="1366" y2="396" stroke="var(--stroke)" stroke-width="1.4"/>
+  <text class="t tiny" x="1236" y="413">per device · 500 devices ≈ 35 GB/day</text>
+
+  <g filter="url(#sh)"><rect class="card" x="1218" y="440" width="164" height="92" rx="11"/></g>
+  <rect x="1236" y="458" width="38" height="38" rx="9" fill="url(#gBlue)"/><use href="#icBrowser" x="1236" y="458" width="38" height="38"/>
+  <text class="t name2" x="1284" y="474">Listeners</text>
+  <text class="t d"     x="1284" y="490">live PCM</text>
+  <text class="t tiny"  x="1236" y="515">raw 48 kHz int16 frames</text>
+
+  <g filter="url(#sh)"><rect class="card" x="1218" y="548" width="164" height="92" rx="11"/></g>
+  <rect x="1236" y="566" width="38" height="38" rx="9" fill="url(#gBlue)"/><use href="#icBrowser" x="1236" y="566" width="38" height="38"/>
+  <text class="t name2" x="1284" y="582">Dashboard</text>
+  <text class="t d"     x="1284" y="598">devices · timeline</text>
+  <text class="t tiny"  x="1236" y="623">playback by device and date</text>
+
+  <!-- ============================ flows ============================ -->
+  <!-- edge -> ingest, gathered onto one rail -->
+  <g class="wire">
+    <path d="M282 228 H322"/>
+    <path d="M282 354 H322"/>
+    <path d="M282 478 H322"/>
+    <path d="M322 228 V478"/>
+    <path d="M322 240 H374" marker-end="url(#a)"/>
+  </g>
+  <circle cx="322" cy="240" r="3.2" fill="var(--wire)"/>
+  <text class="t flow" x="328" y="199" text-anchor="middle">Opus/RTP</text>
+  <text class="t flow" x="328" y="212" text-anchor="middle">over TCP</text>
+
+  <!-- ingest -> kafka -->
+  <path class="wire" d="M538 240 H630" marker-end="url(#a)"/>
+  <text class="t flow" x="584" y="232" text-anchor="middle">produce</text>
+  <text class="t tiny" x="584" y="256" text-anchor="middle">25k msg/s</text>
+
+  <!-- kafka -> consumers, fanned off one rail -->
+  <g class="awire">
+    <path d="M830 324 H876"/>
+    <path d="M876 216 V580"/>
+    <path d="M876 216 H922" marker-end="url(#ap)"/>
+    <path d="M876 324 H922" marker-end="url(#ap)"/>
+    <path d="M876 468 H922" marker-end="url(#ap)"/>
+    <path d="M876 580 H922" marker-end="url(#ap)"/>
+  </g>
+  <circle cx="876" cy="324" r="3.2" fill="var(--accent)"/>
+  <text class="t flow" x="876" y="196" text-anchor="middle" fill="var(--accent)">consume</text>
+
+  <!-- levels -> api via device.levels -->
+  <path class="awire" d="M922 386 H860 V462 H834" marker-end="url(#ap)" stroke-dasharray="5 4"/>
+  <text class="t flow" x="884" y="424" text-anchor="middle" fill="var(--accent)" transform="rotate(90 884 424)">writes</text>
+
+  <!-- consumers -> serving -->
+  <g class="wire">
+    <path d="M1126 210 H1218" marker-end="url(#a)"/>
+    <path d="M1126 480 H1218" marker-end="url(#a)"/>
+    <path d="M1126 590 H1218" marker-end="url(#a)"/>
+  </g>
+
+  <!-- ============================ footer ============================ -->
+  <line x1="40" y1="708" x2="1400" y2="708" stroke="var(--stroke)" stroke-width="1.4"/>
+  <rect x="44" y="726" width="34" height="34" rx="8" fill="url(#gBlue)"/><use href="#icDocker" x="44" y="726" width="34" height="34"/>
+  <text class="t name2" x="90" y="741">One image, six roles</text>
+  <text class="m" x="90" y="758" font-size="11" fill="var(--mut)">docker compose up -d --build</text>
+
+  <text class="t plabel" x="330" y="736">MEASURED AT 500 DEVICES</text>
+  <text class="t d"      x="330" y="757">ingest and the non-decoding consumers held zero lag; only decode needed replicas.</text>
+
+  <text class="t plabel" x="880" y="736">PORTS</text>
+  <text class="m" x="880" y="757" font-size="11" fill="var(--mut)">6000 devices · 8080 api · 8081 live · 9001 minio · 29092 kafka</text>
+</svg>

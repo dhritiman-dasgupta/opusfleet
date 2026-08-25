@@ -1,0 +1,36 @@
+# TLS termination for the CMS. Caddy gets certificates automatically, which is
+# what lets the Amplify-hosted CMS talk to this box over HTTPS/WSS -- a static
+# site served over HTTPS cannot call a plain-HTTP API without being blocked as
+# mixed content.
+#
+# Replace the hostname before first run. Using the bare IP will NOT work:
+# Let's Encrypt does not issue certificates for IP addresses.
+
+{$OPUSFLEET_DOMAIN:audio.example.com} {
+	encode zstd gzip
+
+	# live audio websocket
+	@ws {
+		header Connection *Upgrade*
+		header Upgrade websocket
+	}
+	handle @ws {
+		reverse_proxy live:8081
+	}
+
+	# REST API
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+	handle /health {
+		reverse_proxy api:8080
+	}
+
+	# presigned MinIO URLs point at this host, so the object path must be reachable
+	handle /recordings/* {
+		uri strip_prefix /recordings
+		reverse_proxy minio:9000
+	}
+
+	respond "opusfleet ingest" 200
+}
