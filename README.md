@@ -28,6 +28,32 @@ Embedded devices that stream audio — body-worn recorders, stage microphones, I
 - **Segments are re-muxed, not re-encoded.** The device already produced Opus; the segmenter wraps those exact packets in an Ogg container. Output is bit-identical to what the microphone captured, at **1/12th** the size of 48 kHz WAV.
 - **The simulator speaks the real wire format.** Same framing, same RTP headers, same encoder settings. The server cannot tell it from hardware — which is the only way a load test means anything.
 
+## Running this on AWS
+
+The compose stack is the local shape. Deployed, the same pipeline maps onto managed
+services — MSK for the bus, ECS Fargate for ingest and the consumers, S3 with a Glacier
+lifecycle for segments, and an inference lane hanging off EventBridge.
+
+<p align="center">
+  <img src="docs/aws-architecture.svg" alt="AWS reference architecture: devices reach a Network Load Balancer behind Global Accelerator, an ECS Fargate ingest service produces to Amazon MSK, consumer services write Ogg Opus segments to S3 and device state to DynamoDB, EventBridge and Lambda drive Transcribe and SageMaker, with CloudFront, API Gateway and Cognito serving the dashboard." width="100%">
+</p>
+
+Two details worth calling out, because they come from the device rather than the cloud:
+
+- **Global Accelerator earns its place here.** The modem firmware stores a *numeric* IP
+  and validates it as one, so DNS is not in the device's path at all. Static anycast IPs
+  mean the backend can move without pushing an OTA config change to the fleet.
+- **Auto Scaling should track consumer lag, not CPU.** The decode stage falls behind long
+  before its CPU looks alarming — lag is the signal that actually correlates with the
+  service failing to keep up.
+
+The security row in that diagram is deliberate: this repo's ingest is unauthenticated
+(see [Notes](#notes)), so anything reaching port 6000 can claim any device id. The
+diagram shows what closing that looks like end to end — per-device X.509 in a secure
+element, mTLS or MQTT to IoT Core instead of plaintext TCP, signed OTA on top of the
+existing sha256-and-rollback supervisor, and Device Defender watching for a unit whose
+traffic stops looking like a microphone.
+
 ## Quick start
 
 ```bash

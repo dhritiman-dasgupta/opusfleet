@@ -1,0 +1,388 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1330" width="1600" height="1330" role="img" aria-label="AWS reference architecture for the opusfleet audio device service">
+<title>opusfleet on AWS — reference architecture</title>
+<style>
+  :root{
+    --bg:#ffffff; --card:#ffffff; --stroke:#dfe6ee; --ink:#0f1720; --mut:#54647a; --faint:#7c8895;
+    --cloud:#f4f7fa; --cloudline:#232F3E; --region:#eef3f8; --regionline:#3E5871;
+    --vpc:#f3f8f3; --vpcline:#248814; --sub:#eef4fb; --subline:#2E73B8; --subpriv:#f5f0fb; --sublinepriv:#7A34F5;
+    --wire:#7d8b99; --mono:#44515e;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0d1117; --card:#181f28; --stroke:#2b3441; --ink:#e9eff6; --mut:#9dabb9; --faint:#78848f;
+      --cloud:#131a22; --cloudline:#8b9cb0; --region:#141c25; --regionline:#7d93ab;
+      --vpc:#131f18; --vpcline:#4fbf3c; --sub:#131c26; --subline:#5fa2e0; --subpriv:#1a1526; --sublinepriv:#b494ff;
+      --wire:#7f8d9b; --mono:#a9b6c3;
+    }
+  }
+  .t{font-family:Inter,ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+  .m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .h1{font-size:29px;font-weight:800;fill:var(--ink)}
+  .sub{font-size:14px;fill:var(--mut)}
+  .grp{font-size:11.5px;font-weight:800;letter-spacing:1.3px;fill:var(--faint)}
+  .svc{font-size:13.5px;font-weight:750;fill:var(--ink)}
+  .d{font-size:11px;fill:var(--mut)}
+  .tiny{font-size:10px;fill:var(--faint)}
+  .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.3}
+  .flow{font-size:10.5px;font-weight:700;fill:var(--mut)}
+  .wire{stroke:var(--wire);stroke-width:2;fill:none}
+</style>
+<defs>
+  <linearGradient id="gCompute" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFB066"/><stop offset="1" stop-color="#ED7100"/></linearGradient>
+  <linearGradient id="gStorage" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#AEDC55"/><stop offset="1" stop-color="#7AA116"/></linearGradient>
+  <linearGradient id="gNet"     x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B58CFF"/><stop offset="1" stop-color="#8C4FFF"/></linearGradient>
+  <linearGradient id="gDb"      x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E77BEF"/><stop offset="1" stop-color="#C925D1"/></linearGradient>
+  <linearGradient id="gSec"     x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F0798A"/><stop offset="1" stop-color="#DD344C"/></linearGradient>
+  <linearGradient id="gMl"      x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4FD8C4"/><stop offset="1" stop-color="#01A88D"/></linearGradient>
+  <linearGradient id="gInt"     x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F76BAB"/><stop offset="1" stop-color="#E7157B"/></linearGradient>
+  <linearGradient id="gIot"     x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8FD44A"/><stop offset="1" stop-color="#5B8A0E"/></linearGradient>
+  <linearGradient id="gBar" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#232F3E"/><stop offset=".5" stop-color="#8C4FFF"/><stop offset="1" stop-color="#ED7100"/>
+  </linearGradient>
+  <filter id="sh" x="-25%" y="-25%" width="150%" height="165%">
+    <feDropShadow dx="0" dy="1.4" stdDeviation="2.4" flood-color="#0b1a2b" flood-opacity="0.09"/>
+  </filter>
+  <marker id="a" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+    <path d="M0,0 L10,5 L0,10 z" fill="var(--wire)"/>
+  </marker>
+
+  <symbol id="iDev" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="14.5" y="14.5" width="19" height="19" rx="3.5"/><rect x="20.5" y="20.5" width="7" height="7" rx="1.5" fill="#fff" stroke="none"/><path d="M19.5 14.5V10M24 14.5V10M28.5 14.5V10M19.5 33.5V38M24 33.5V38M28.5 33.5V38M14.5 19.5H10M14.5 24H10M14.5 28.5H10M33.5 19.5H38M33.5 24H38M33.5 28.5H38"/></g></symbol>
+  <symbol id="iBot" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><rect x="10.5" y="17" width="27" height="18" rx="5"/><circle cx="18.5" cy="26" r="2.8" fill="#fff" stroke="none"/><circle cx="29.5" cy="26" r="2.8" fill="#fff" stroke="none"/><path d="M24 17v-5.5M19.5 39.5h9"/><circle cx="24" cy="10" r="2.2" fill="#fff" stroke="none"/></g></symbol>
+  <symbol id="iDns" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5"><circle cx="24" cy="24" r="15"/><ellipse cx="24" cy="24" rx="6.5" ry="15"/><path d="M9.5 19h29M9.5 29h29" stroke-linecap="round"/></g></symbol>
+  <symbol id="iGa" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="24" cy="24" r="6"/><path d="M24 18V8M24 40V30M18 24H8M40 24H30"/><path d="M28.5 19.5l7-7M12.5 35.5l7-7M28.5 28.5l7 7M12.5 12.5l7 7" stroke-width="2"/></g></symbol>
+  <symbol id="iCert" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"><rect x="9" y="10" width="30" height="21" rx="3"/><path d="M15 17h18M15 23h11" stroke-linecap="round"/><path d="M20 31l-3 9 7-3.5 7 3.5-3-9"/></g></symbol>
+  <symbol id="iIot" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.4"><circle cx="24" cy="24" r="5" fill="#fff" stroke="none"/><circle cx="24" cy="9" r="3.6"/><circle cx="10" cy="32" r="3.6"/><circle cx="38" cy="32" r="3.6"/><path d="M24 14v5M20 27l-7 3M28 27l7 3" stroke-linecap="round"/></g></symbol>
+  <symbol id="iLb" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="17" y="7" width="14" height="10" rx="2"/><path d="M24 17v7M24 24H11v6M24 24h13v6M24 24v6"/><rect x="5" y="31" width="12" height="9" rx="2"/><rect x="18" y="31" width="12" height="9" rx="2"/><rect x="31" y="31" width="12" height="9" rx="2"/></g></symbol>
+  <symbol id="iNat" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h22l-6-6M39 30H17l6 6"/></g></symbol>
+  <symbol id="iEcs" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.4"><rect x="8" y="14" width="14" height="10" rx="1.8"/><rect x="26" y="14" width="14" height="10" rx="1.8"/><rect x="8" y="27" width="14" height="10" rx="1.8"/><rect x="26" y="27" width="14" height="10" rx="1.8"/><path d="M24 8v4" stroke-linecap="round"/></g></symbol>
+  <symbol id="iKafka" viewBox="0 0 48 48"><g fill="#fff"><circle cx="15" cy="11" r="4.2"/><circle cx="15" cy="37" r="4.2"/><circle cx="33" cy="24" r="5.2"/><rect x="13.3" y="13" width="3.4" height="22" rx="1.7"/><path d="M18 13.8l10.5 6.4M18 34.2l10.5-6.4" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/></g></symbol>
+  <symbol id="iS3" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"><path d="M11 13.5h26l-3 24a2.4 2.4 0 0 1-2.4 2.1H16.4A2.4 2.4 0 0 1 14 37.5z"/><ellipse cx="24" cy="13" rx="13" ry="4.3"/><path d="M17.5 24h13M18.5 31h11" stroke-width="2.2"/></g></symbol>
+  <symbol id="iGlacier" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"><path d="M24 8l14 8v16l-14 8-14-8V16z"/><path d="M10 16l14 8 14-8M24 24v16" stroke-width="2.2"/></g></symbol>
+  <symbol id="iDdb" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5"><ellipse cx="24" cy="12.5" rx="13" ry="4.6"/><path d="M11 12.5v23c0 2.5 5.8 4.6 13 4.6s13-2.1 13-4.6v-23"/><path d="M11 24c0 2.5 5.8 4.6 13 4.6s13-2.1 13-4.6"/></g></symbol>
+  <symbol id="iEvb" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M8 24h32"/><circle cx="14" cy="24" r="3.4" fill="#fff" stroke="none"/><circle cx="24" cy="24" r="3.4" fill="#fff" stroke="none"/><circle cx="34" cy="24" r="3.4" fill="#fff" stroke="none"/><path d="M14 20.6V12M24 20.6V12M34 27.4V36"/></g></symbol>
+  <symbol id="iLambda" viewBox="0 0 48 48"><path d="M14 9h8l14 30h-7.5L18.5 18 12 39H5z" fill="#fff"/></symbol>
+  <symbol id="iMl" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.3"><circle cx="12" cy="14" r="3.4"/><circle cx="12" cy="34" r="3.4"/><circle cx="24" cy="24" r="3.8"/><circle cx="36" cy="14" r="3.4"/><circle cx="36" cy="34" r="3.4"/><path d="M15 15.6l6 6M15 32.4l6-6M27 21.6l6-6M27 26.4l6 6" stroke-linecap="round"/></g></symbol>
+  <symbol id="iScribe" viewBox="0 0 48 48"><g stroke="#fff" stroke-width="2.7" stroke-linecap="round"><path d="M8 19v10M15 13v22M22 17v14"/><path d="M30 16h12M30 24h12M30 32h8" stroke-width="2.4"/></g></symbol>
+  <symbol id="iCf" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.4"><circle cx="24" cy="24" r="15"/><path d="M9.5 24h29" stroke-linecap="round"/><ellipse cx="24" cy="24" rx="7" ry="15"/><circle cx="24" cy="9" r="2.6" fill="#fff" stroke="none"/><circle cx="11.5" cy="31.5" r="2.6" fill="#fff" stroke="none"/><circle cx="36.5" cy="31.5" r="2.6" fill="#fff" stroke="none"/></g></symbol>
+  <symbol id="iShield" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.7" stroke-linejoin="round" stroke-linecap="round"><path d="M24 7l14 5v11c0 9-6 15.5-14 18-8-2.5-14-9-14-18V12z"/><path d="M17.5 24l4.5 4.5 9-9"/></g></symbol>
+  <symbol id="iApi" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18.5 12c-5.5 0-4.5 10-9.5 12 5 2 4 12 9.5 12M29.5 12c5.5 0 4.5 10 9.5 12-5 2-4 12-9.5 12"/></g></symbol>
+  <symbol id="iUser" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><circle cx="24" cy="17" r="7"/><path d="M10 39c0-7.5 6.3-12 14-12s14 4.5 14 12"/></g></symbol>
+  <symbol id="iEcr" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"><path d="M24 7l15 8v18l-15 8-15-8V15z"/><rect x="17" y="20" width="6" height="5" rx="1"/><rect x="25" y="20" width="6" height="5" rx="1"/><rect x="21" y="27" width="6" height="5" rx="1"/></g></symbol>
+  <symbol id="iCw" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 32l7-9 6 5 7-12 5 8 7-6"/><path d="M8 39h32" stroke-width="2.2"/></g></symbol>
+  <symbol id="iXray" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><rect x="8" y="11" width="24" height="6" rx="3"/><rect x="14" y="21" width="24" height="6" rx="3"/><rect x="11" y="31" width="17" height="6" rx="3"/></g></symbol>
+  <symbol id="iKey" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.7" stroke-linecap="round"><circle cx="17" cy="24" r="8"/><path d="M25 24h16M35 24v7M41 24v5"/></g></symbol>
+  <symbol id="iChipLock" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"><rect x="13" y="13" width="22" height="22" rx="3.5"/><path d="M18 13V9M24 13V9M30 13V9M18 35v4M24 35v4M30 35v4M13 18H9M13 24H9M13 30H9M35 18h4M35 24h4M35 30h4"/><rect x="20" y="23" width="8" height="7" rx="1.2" fill="#fff" stroke="none"/><path d="M21.6 23v-2.2a2.4 2.4 0 0 1 4.8 0V23" stroke-width="1.9"/></g></symbol>
+  <symbol id="iLock" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.7" stroke-linecap="round"><rect x="12" y="21" width="24" height="18" rx="3.5" fill="#fff" stroke="none"/><path d="M17 21v-5a7 7 0 0 1 14 0v5"/></g></symbol>
+  <symbol id="iEye" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6"><path d="M5 24s7-11 19-11 19 11 19 11-7 11-19 11S5 24 5 24z"/><circle cx="24" cy="24" r="5.2" fill="#fff" stroke="none"/></g></symbol>
+  <symbol id="iSign" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M24 6l14 5v12c0 9-6 15-14 18-8-3-14-9-14-18V11z"/><path d="M17 23.5l4.5 4.5L31 18.5"/></g></symbol>
+  <symbol id="iScale" viewBox="0 0 48 48"><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 30V13l-5 5M14 13l5 5M34 18v17l5-5M34 35l-5-5"/></g></symbol>
+</defs>
+
+<rect width="1600" height="1330" fill="var(--bg)"/>
+<rect x="0" y="0" width="1600" height="5" fill="url(#gBar)"/>
+<text class="t h1" x="40" y="54">opusfleet on AWS</text>
+<text class="t sub" x="40" y="80">Reference architecture for deploying the audio-device service: cellular Opus ingest, a managed event bus, durable segments, an inference lane, and the platform around it.</text>
+
+<!-- ===================== FIELD ===================== -->
+<rect x="32" y="132" width="212" height="474" rx="12" fill="none" stroke="var(--stroke)" stroke-width="1.5" stroke-dasharray="5 5"/>
+<text class="t grp" x="50" y="156">FIELD</text>
+<g filter="url(#sh)"><rect class="card" x="48" y="172" width="180" height="126" rx="10"/></g>
+<rect x="66" y="190" width="40" height="40" rx="9" fill="url(#gIot)"/><use href="#iDev" x="66" y="190" width="40" height="40"/>
+<text class="t svc" x="116" y="206">Device fleet</text>
+<text class="t d"   x="116" y="223">MCU + I2S mic</text>
+<text class="t d"    x="66" y="252">Opus 64 kbps · 20 ms frames</text>
+<text class="t d"    x="66" y="268">cellular modem, store-and-forward</text>
+<text class="t tiny" x="66" y="286">≈ 8 KB/s per device</text>
+
+<g filter="url(#sh)"><rect x="48" y="316" width="180" height="112" rx="10" fill="var(--card)" stroke="var(--sublinepriv)" stroke-width="1.5" stroke-dasharray="5 4"/></g>
+<rect x="66" y="334" width="40" height="40" rx="9" fill="url(#gNet)"/><use href="#iBot" x="66" y="334" width="40" height="40"/>
+<text class="t svc" x="116" y="350">Fleet sim</text>
+<text class="t d"   x="116" y="367">500+ devices</text>
+<text class="t d"   x="66"  y="396">Same wire format — used to</text>
+<text class="t d"   x="66"  y="412">load-test before the fleet ships.</text>
+
+<g filter="url(#sh)"><rect x="48" y="446" width="180" height="142" rx="10" fill="var(--card)" stroke="#DD344C" stroke-width="1.5"/></g>
+<rect x="66" y="462" width="38" height="38" rx="9" fill="url(#gSec)"/><use href="#iChipLock" x="66" y="462" width="38" height="38"/>
+<text class="t svc" x="114" y="477">Hardened</text>
+<text class="t d"   x="114" y="493">on the device</text>
+<text class="t d"   x="66"  y="518">Secure Boot v2 + flash</text>
+<text class="t d"   x="66"  y="534">encryption burned to eFuse</text>
+<text class="t d"   x="66"  y="550">X.509 key in a secure element</text>
+<text class="t d"   x="66"  y="566">Signed OTA, sha256 + rollback</text>
+<text class="t tiny" x="66" y="582">BLE provisioning behind a PoP</text>
+
+<!-- ===================== AWS CLOUD ===================== -->
+<rect x="272" y="120" width="1296" height="1154" rx="14" fill="var(--cloud)" stroke="var(--cloudline)" stroke-width="1.8"/>
+<text class="t grp" x="292" y="146" fill="var(--cloudline)">AWS CLOUD</text>
+<rect x="292" y="158" width="1256" height="1098" rx="12" fill="var(--region)" stroke="var(--regionline)" stroke-width="1.5" stroke-dasharray="7 5"/>
+<text class="t grp" x="312" y="182" fill="var(--regionline)">REGION · ap-south-1</text>
+
+<!-- == Band 0: edge == -->
+<g filter="url(#sh)">
+  <rect class="card" x="312" y="196" width="288" height="88" rx="10"/>
+  <rect class="card" x="620" y="196" width="288" height="88" rx="10"/>
+  <rect class="card" x="928" y="196" width="288" height="88" rx="10"/>
+  <rect class="card" x="1236" y="196" width="288" height="88" rx="10"/>
+</g>
+<rect x="330" y="214" width="38" height="38" rx="9" fill="url(#gNet)"/><use href="#iDns" x="330" y="214" width="38" height="38"/>
+<text class="t svc" x="378" y="229">Route 53</text>
+<text class="t d"   x="378" y="245">DNS + health checks</text>
+<text class="t tiny" x="330" y="272">failover between regions</text>
+
+<rect x="638" y="214" width="38" height="38" rx="9" fill="url(#gNet)"/><use href="#iGa" x="638" y="214" width="38" height="38"/>
+<text class="t svc" x="686" y="229">Global Accelerator</text>
+<text class="t d"   x="686" y="245">static anycast IPs</text>
+<text class="t tiny" x="638" y="272">firmware pins a numeric IP — this keeps it stable</text>
+
+<rect x="946" y="214" width="38" height="38" rx="9" fill="url(#gSec)"/><use href="#iCert" x="946" y="214" width="38" height="38"/>
+<text class="t svc" x="994" y="229">ACM</text>
+<text class="t d"   x="994" y="245">TLS certificates</text>
+<text class="t tiny" x="946" y="272">terminates device TLS and the CMS origin</text>
+
+<rect x="1254" y="214" width="38" height="38" rx="9" fill="url(#gIot)"/><use href="#iIot" x="1254" y="214" width="38" height="38"/>
+<text class="t svc" x="1302" y="229">AWS IoT Core</text>
+<text class="t d"   x="1302" y="245">identity · jobs · shadow</text>
+<text class="t tiny" x="1254" y="272">X.509 per device, OTA jobs, STAT telemetry</text>
+
+<!-- == VPC == -->
+<rect x="312" y="304" width="892" height="404" rx="12" fill="var(--vpc)" stroke="var(--vpcline)" stroke-width="1.8"/>
+<text class="t grp" x="330" y="328" fill="var(--vpcline)">VPC · MULTI-AZ</text>
+
+<rect x="330" y="342" width="256" height="348" rx="10" fill="var(--sub)" stroke="var(--subline)" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text class="t grp" x="346" y="364" fill="var(--subline)">PUBLIC SUBNETS</text>
+<g filter="url(#sh)"><rect class="card" x="346" y="376" width="224" height="92" rx="9"/></g>
+<rect x="362" y="392" width="36" height="36" rx="8" fill="url(#gNet)"/><use href="#iLb" x="362" y="392" width="36" height="36"/>
+<text class="t svc" x="408" y="406">Network LB</text>
+<text class="t d"   x="408" y="421">TCP :6000</text>
+<text class="t tiny" x="362" y="443">the only internet-facing entry</text>
+<text class="t tiny" x="362" y="457">for the device fleet</text>
+
+<g filter="url(#sh)"><rect class="card" x="346" y="484" width="224" height="80" rx="9"/></g>
+<rect x="362" y="500" width="36" height="36" rx="8" fill="url(#gNet)"/><use href="#iNat" x="362" y="500" width="36" height="36"/>
+<text class="t svc" x="408" y="514">NAT Gateway</text>
+<text class="t d"   x="408" y="529">egress only</text>
+<text class="t tiny" x="362" y="551">private tasks reach AWS APIs</text>
+
+<g filter="url(#sh)"><rect class="card" x="346" y="580" width="224" height="94" rx="9"/></g>
+<text class="t grp" x="362" y="602" fill="var(--faint)">VPC ENDPOINTS</text>
+<text class="t d"   x="362" y="622">S3 · ECR · Secrets Manager</text>
+<text class="t d"   x="362" y="639">CloudWatch Logs · MSK</text>
+<text class="t tiny" x="362" y="660">keeps traffic off the public internet</text>
+
+<rect x="602" y="342" width="292" height="348" rx="10" fill="var(--subpriv)" stroke="var(--sublinepriv)" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text class="t grp" x="618" y="364" fill="var(--sublinepriv)">PRIVATE SUBNETS · COMPUTE</text>
+<g filter="url(#sh)"><rect class="card" x="618" y="376" width="260" height="96" rx="9"/></g>
+<rect x="634" y="392" width="36" height="36" rx="8" fill="url(#gCompute)"/><use href="#iEcs" x="634" y="392" width="36" height="36"/>
+<text class="t svc" x="680" y="406">ECS Fargate — ingest</text>
+<text class="t d"   x="680" y="421">parse framing, produce</text>
+<text class="t tiny" x="634" y="443">never decodes audio; the only task</text>
+<text class="t tiny" x="634" y="459">that must keep up in real time</text>
+
+<g filter="url(#sh)"><rect class="card" x="618" y="488" width="260" height="120" rx="9"/></g>
+<rect x="634" y="504" width="36" height="36" rx="8" fill="url(#gCompute)"/><use href="#iEcs" x="634" y="504" width="36" height="36"/>
+<text class="t svc" x="680" y="518">ECS Fargate — consumers</text>
+<text class="t d"   x="680" y="533">one service per role</text>
+<text class="m d"   x="634" y="558">segmenter · levels · live · api</text>
+<text class="t tiny" x="634" y="578">levels is the decode stage — the only</text>
+<text class="t tiny" x="634" y="593">one that scales with fleet size</text>
+
+<g filter="url(#sh)"><rect class="card" x="618" y="624" width="260" height="50" rx="9"/></g>
+<rect x="632" y="634" width="30" height="30" rx="7" fill="url(#gCompute)"/><use href="#iScale" x="632" y="634" width="30" height="30"/>
+<text class="t svc" x="672" y="646">Application Auto Scaling</text>
+<text class="t tiny" x="672" y="661">target-tracks Kafka consumer lag</text>
+
+<rect x="910" y="342" width="278" height="348" rx="10" fill="var(--subpriv)" stroke="var(--sublinepriv)" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text class="t grp" x="926" y="364" fill="var(--sublinepriv)">PRIVATE SUBNETS · DATA</text>
+<g filter="url(#sh)"><rect class="card" x="926" y="376" width="246" height="128" rx="9"/></g>
+<rect x="942" y="392" width="38" height="38" rx="9" fill="url(#gNet)"/><use href="#iKafka" x="942" y="392" width="38" height="38"/>
+<text class="t svc" x="990" y="407">Amazon MSK</text>
+<text class="t d"   x="990" y="423">managed Kafka</text>
+<text class="m d"   x="942" y="450">audio.raw · 12 partitions</text>
+<text class="m d"   x="942" y="468">device.stat / events / levels</text>
+<text class="t tiny" x="942" y="489">brokers across 3 AZs · retention capped</text>
+
+<g filter="url(#sh)"><rect class="card" x="926" y="520" width="246" height="90" rx="9"/></g>
+<rect x="942" y="536" width="36" height="36" rx="8" fill="url(#gDb)"/><use href="#iDdb" x="942" y="536" width="36" height="36"/>
+<text class="t svc" x="988" y="550">DynamoDB</text>
+<text class="t d"   x="988" y="565">device state + timeline</text>
+<text class="t tiny" x="942" y="587">replaces the in-memory state the</text>
+<text class="t tiny" x="942" y="601">API rebuilt on every restart</text>
+
+<g filter="url(#sh)"><rect class="card" x="926" y="626" width="246" height="48" rx="9"/></g>
+<text class="t d" x="942" y="646">Security groups per service tier;</text>
+<text class="t d" x="942" y="663">no task is directly reachable.</text>
+
+<!-- == right column: storage + AI == -->
+<text class="t grp" x="1236" y="328">STORAGE &amp; INFERENCE</text>
+<g filter="url(#sh)"><rect class="card" x="1224" y="342" width="300" height="96" rx="10"/></g>
+<rect x="1242" y="358" width="38" height="38" rx="9" fill="url(#gStorage)"/><use href="#iS3" x="1242" y="358" width="38" height="38"/>
+<text class="t svc" x="1290" y="373">Amazon S3</text>
+<text class="t d"   x="1290" y="389">Ogg Opus segments</text>
+<text class="m tiny" x="1242" y="412">&lt;device&gt;/&lt;date&gt;/&lt;time&gt;_&lt;secs&gt;s.opus</text>
+<text class="t tiny" x="1242" y="428">28 MB/hour/device — 12× smaller than WAV</text>
+
+<g filter="url(#sh)"><rect class="card" x="1224" y="452" width="300" height="72" rx="10"/></g>
+<rect x="1242" y="466" width="34" height="34" rx="8" fill="url(#gStorage)"/><use href="#iGlacier" x="1242" y="466" width="34" height="34"/>
+<text class="t svc" x="1286" y="480">S3 Lifecycle → Glacier IR</text>
+<text class="t d"   x="1286" y="495">cold after 30 days</text>
+<text class="t tiny" x="1242" y="515">the single biggest cost lever at fleet scale</text>
+
+<g filter="url(#sh)"><rect class="card" x="1224" y="538" width="300" height="76" rx="10"/></g>
+<rect x="1242" y="552" width="34" height="34" rx="8" fill="url(#gInt)"/><use href="#iEvb" x="1242" y="552" width="34" height="34"/>
+<text class="t svc" x="1286" y="566">EventBridge</text>
+<text class="t d"   x="1286" y="581">on new segment</text>
+<rect x="1242" y="592" width="0" height="0"/>
+<text class="t tiny" x="1242" y="605">decouples the inference lane from ingest</text>
+
+<g filter="url(#sh)"><rect class="card" x="1224" y="628" width="300" height="80" rx="10"/></g>
+<rect x="1242" y="642" width="34" height="34" rx="8" fill="url(#gCompute)"/><use href="#iLambda" x="1242" y="642" width="34" height="34"/>
+<text class="t svc" x="1286" y="656">AWS Lambda</text>
+<text class="t d"   x="1286" y="671">orchestrates inference</text>
+<text class="t tiny" x="1242" y="693">fans a finished segment out to the models below</text>
+
+<g filter="url(#sh)"><rect class="card" x="1224" y="722" width="300" height="112" rx="10"/></g>
+<text class="t grp" x="1242" y="744">AI / ML LANE</text>
+<rect x="1242" y="754" width="32" height="32" rx="7" fill="url(#gMl)"/><use href="#iScribe" x="1242" y="754" width="32" height="32"/>
+<text class="t svc" x="1284" y="768">Amazon Transcribe</text>
+<text class="t tiny" x="1284" y="782">speech → text per segment</text>
+<rect x="1242" y="794" width="32" height="32" rx="7" fill="url(#gMl)"/><use href="#iMl" x="1242" y="794" width="32" height="32"/>
+<text class="t svc" x="1284" y="808">SageMaker · Bedrock</text>
+<text class="t tiny" x="1284" y="822">custom models · summaries</text>
+
+<!-- == Band 2: serving == -->
+<text class="t grp" x="312" y="742">SERVING &amp; ACCESS</text>
+<g filter="url(#sh)">
+  <rect class="card" x="312" y="756" width="212" height="94" rx="10"/>
+  <rect class="card" x="536" y="756" width="212" height="94" rx="10"/>
+  <rect class="card" x="760" y="756" width="212" height="94" rx="10"/>
+  <rect class="card" x="984" y="756" width="220" height="94" rx="10"/>
+</g>
+<rect x="328" y="772" width="36" height="36" rx="8" fill="url(#gNet)"/><use href="#iCf" x="328" y="772" width="36" height="36"/>
+<text class="t svc" x="374" y="786">CloudFront</text>
+<text class="t d"   x="374" y="801">+ AWS WAF</text>
+<text class="t tiny" x="328" y="824">HTTPS/WSS edge for the dashboard</text>
+<text class="t tiny" x="328" y="838">and presigned recording URLs</text>
+
+<rect x="552" y="772" width="36" height="36" rx="8" fill="url(#gStorage)"/><use href="#iS3" x="552" y="772" width="36" height="36"/>
+<text class="t svc" x="598" y="786">S3 static site</text>
+<text class="t d"   x="598" y="801">the CMS build</text>
+<text class="t tiny" x="552" y="824">Next.js static export, or</text>
+<text class="t tiny" x="552" y="838">Amplify Hosting if you prefer</text>
+
+<rect x="776" y="772" width="36" height="36" rx="8" fill="url(#gInt)"/><use href="#iApi" x="776" y="772" width="36" height="36"/>
+<text class="t svc" x="822" y="786">API Gateway</text>
+<text class="t d"   x="822" y="801">HTTP + WebSocket</text>
+<text class="t tiny" x="776" y="824">REST to the api service,</text>
+<text class="t tiny" x="776" y="838">WSS for live audio</text>
+
+<rect x="1000" y="772" width="36" height="36" rx="8" fill="url(#gSec)"/><use href="#iUser" x="1000" y="772" width="36" height="36"/>
+<text class="t svc" x="1046" y="786">Cognito</text>
+<text class="t d"   x="1046" y="801">operator sign-in</text>
+<text class="t tiny" x="1000" y="824">the gap in the current design —</text>
+<text class="t tiny" x="1000" y="838">nothing authenticates today</text>
+
+<!-- == Band 3: platform == -->
+<text class="t grp" x="312" y="884">PLATFORM · CI/CD, OBSERVABILITY, SECURITY</text>
+<g filter="url(#sh)">
+  <rect class="card" x="312" y="898" width="288" height="122" rx="10"/>
+  <rect class="card" x="620" y="898" width="288" height="122" rx="10"/>
+  <rect class="card" x="928" y="898" width="288" height="122" rx="10"/>
+  <rect class="card" x="1236" y="898" width="288" height="122" rx="10"/>
+</g>
+<rect x="330" y="914" width="36" height="36" rx="8" fill="url(#gCompute)"/><use href="#iEcr" x="330" y="914" width="36" height="36"/>
+<text class="t svc" x="376" y="928">Amazon ECR</text>
+<text class="t d"   x="376" y="943">one image, six roles</text>
+<text class="t d"    x="330" y="968">GitHub Actions assumes a role via</text>
+<text class="t d"    x="330" y="984">OIDC — no long-lived AWS keys.</text>
+<text class="t tiny" x="330" y="1005">build → scan → push → ECS rolling deploy</text>
+
+<rect x="638" y="914" width="36" height="36" rx="8" fill="url(#gInt)"/><use href="#iCw" x="638" y="914" width="36" height="36"/>
+<text class="t svc" x="684" y="928">CloudWatch</text>
+<text class="t d"   x="684" y="943">logs · metrics · alarms</text>
+<text class="t d"    x="638" y="968">Container Insights on every task.</text>
+<text class="t d"    x="638" y="984">Alarm on consumer lag, not CPU —</text>
+<text class="t tiny" x="638" y="1005">lag is what actually signals falling behind</text>
+
+<rect x="946" y="914" width="36" height="36" rx="8" fill="url(#gInt)"/><use href="#iXray" x="946" y="914" width="36" height="36"/>
+<text class="t svc" x="992" y="928">AWS X-Ray</text>
+<text class="t d"   x="992" y="943">distributed traces</text>
+<text class="t d"    x="946" y="968">Follow one segment from socket</text>
+<text class="t d"    x="946" y="984">to S3 across four services.</text>
+<text class="t tiny" x="946" y="1005">the thing a single-process server never gave you</text>
+
+<rect x="1254" y="914" width="36" height="36" rx="8" fill="url(#gSec)"/><use href="#iKey" x="1254" y="914" width="36" height="36"/>
+<text class="t svc" x="1300" y="928">Secrets Manager · KMS · IAM</text>
+<text class="t d"   x="1300" y="943">rotation + encryption</text>
+<text class="t d"    x="1254" y="968">SSE-KMS on the bucket, TLS in transit,</text>
+<text class="t d"    x="1254" y="984">task roles scoped per service.</text>
+<text class="t tiny" x="1254" y="1005">replaces plaintext keys in a file</text>
+
+<text class="t grp" x="312" y="1062">SECURITY — DEVICE THROUGH CLOUD</text>
+<g filter="url(#sh)">
+  <rect class="card" x="312" y="1076" width="288" height="162" rx="10"/>
+  <rect class="card" x="620" y="1076" width="288" height="162" rx="10"/>
+  <rect class="card" x="928" y="1076" width="288" height="162" rx="10"/>
+  <rect class="card" x="1236" y="1076" width="288" height="162" rx="10"/>
+</g>
+<rect x="330" y="1092" width="36" height="36" rx="8" fill="url(#gSec)"/><use href="#iLock" x="330" y="1092" width="36" height="36"/>
+<text class="t svc" x="376" y="1106">Device identity</text>
+<text class="t d"   x="376" y="1121">one X.509 cert per unit</text>
+<text class="t d"    x="330" y="1146">Key generated on-device in an</text>
+<text class="t d"    x="330" y="1162">ATECC608A or encrypted NVS,</text>
+<text class="t d"    x="330" y="1178">registered in the IoT Core registry</text>
+<text class="t d"    x="330" y="1194">and individually revocable.</text>
+<text class="t tiny" x="330" y="1216">Today a device is trusted purely because it</text>
+<text class="t tiny" x="330" y="1230">said HELLO:&lt;imei&gt; — anyone can claim any id.</text>
+
+<rect x="638" y="1092" width="36" height="36" rx="8" fill="url(#gSec)"/><use href="#iCert" x="638" y="1092" width="36" height="36"/>
+<text class="t svc" x="684" y="1106">Transport</text>
+<text class="t d"   x="684" y="1121">mTLS, not plaintext TCP</text>
+<text class="t d"    x="638" y="1146">Modem opens TLS 1.2+ and the NLB</text>
+<text class="t d"    x="638" y="1162">verifies the client certificate — or</text>
+<text class="t d"    x="638" y="1178">the device speaks MQTT/TLS</text>
+<text class="t d"    x="638" y="1194">straight to IoT Core instead.</text>
+<text class="t tiny" x="638" y="1216">The link carries live microphone audio, so</text>
+<text class="t tiny" x="638" y="1230">plaintext on port 6000 is the sharpest edge.</text>
+
+<rect x="946" y="1092" width="36" height="36" rx="8" fill="url(#gSec)"/><use href="#iSign" x="946" y="1092" width="36" height="36"/>
+<text class="t svc" x="992" y="1106">Firmware integrity</text>
+<text class="t d"   x="992" y="1121">signed images, safe rollback</text>
+<text class="t d"    x="946" y="1146">The supervisor already verifies</text>
+<text class="t d"    x="946" y="1162">sha256 + size, installs atomically</text>
+<text class="t d"    x="946" y="1178">with a backup, and quarantines a</text>
+<text class="t d"    x="946" y="1194">version that crashes on boot.</text>
+<text class="t tiny" x="946" y="1216">Add image signing and IoT Jobs so an update</text>
+<text class="t tiny" x="946" y="1230">is authenticated, not merely intact.</text>
+
+<rect x="1254" y="1092" width="36" height="36" rx="8" fill="url(#gSec)"/><use href="#iEye" x="1254" y="1092" width="36" height="36"/>
+<text class="t svc" x="1300" y="1106">Detection &amp; audit</text>
+<text class="t d"   x="1300" y="1121">assume something gets in</text>
+<text class="t d"    x="1254" y="1146">GuardDuty · Security Hub</text>
+<text class="t d"    x="1254" y="1162">CloudTrail · VPC Flow Logs</text>
+<text class="t d"    x="1254" y="1178">IoT Device Defender on the fleet</text>
+<text class="t d"    x="1254" y="1194">S3 SSE-KMS + Block Public Access</text>
+<text class="t tiny" x="1254" y="1216">Device Defender flags a unit whose traffic</text>
+<text class="t tiny" x="1254" y="1230">pattern stops looking like a microphone.</text>
+
+<!-- ===================== FLOWS ===================== -->
+<g class="wire">
+  <path d="M244 236 H288" marker-end="url(#a)"/>
+  <path d="M600 240 H620" marker-end="url(#a)"/>
+  <path d="M456 284 V376" marker-end="url(#a)"/>
+  <path d="M570 422 H618" marker-end="url(#a)"/>
+  <path d="M878 424 H926" marker-end="url(#a)"/>
+  <path d="M1049 504 V520" marker-end="url(#a)"/>
+  <path d="M1172 440 H1224" marker-end="url(#a)"/>
+  <path d="M1374 438 V452" marker-end="url(#a)"/>
+  <path d="M1374 524 V538" marker-end="url(#a)"/>
+  <path d="M1374 614 V628" marker-end="url(#a)"/>
+  <path d="M1374 708 V722" marker-end="url(#a)"/>
+  <path d="M866 608 V756" marker-end="url(#a)"/>
+</g>
+<text class="t flow" x="258" y="224" text-anchor="middle">4G</text>
+<text class="t flow" x="466" y="348">TCP</text>
+<text class="t flow" x="594" y="414">frames</text>
+<text class="t flow" x="902" y="416">produce</text>
+<text class="t flow" x="1198" y="430" text-anchor="middle">segments</text>
+<text class="t flow" x="874" y="730">serve</text>
+</svg>
