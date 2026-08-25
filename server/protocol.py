@@ -46,6 +46,15 @@ RTP_SSRC = 0xDEADBEEF        # hardcoded in firmware; server ignores it
 HELLO_PREFIX = b"HELLO:"
 STAT_PREFIX = b"STAT:"
 
+# ---- authentication handshake (see server/auth.py) ----
+# server -> device   CHALLENGE:<32 hex>
+# device -> server   AUTH:<id>:<64 hex>
+# server -> device   OK:<id>  |  DENY:<reason>
+CHALLENGE_PREFIX = b"CHALLENGE:"
+AUTH_PREFIX = b"AUTH:"
+OK_PREFIX = b"OK:"
+DENY_PREFIX = b"DENY:"
+
 # ---- limits ----
 MAX_FRAME = 0xFFFF           # the BE16 length prefix caps a frame at 64 KiB
 SERVER_RECV_TIMEOUT = 90     # conn.settimeout(90) on the server side
@@ -130,6 +139,44 @@ def parse_audio(payload: bytes):
 # control frames
 # --------------------------------------------------------------------------
 
+def build_challenge(nonce: bytes) -> bytes:
+    return CHALLENGE_PREFIX + nonce.hex().encode()
+
+
+def parse_challenge(payload: bytes) -> bytes:
+    """Return the raw nonce bytes from a CHALLENGE frame."""
+    try:
+        return bytes.fromhex(payload[len(CHALLENGE_PREFIX):].decode("ascii"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise ProtocolError(f"bad challenge: {exc}") from exc
+
+
+def build_auth(device_id: str, mac_hex: str) -> bytes:
+    return AUTH_PREFIX + f"{device_id}:{mac_hex}".encode("ascii")
+
+
+def parse_auth(payload: bytes):
+    """Split an AUTH frame into (device_id, mac_hex)."""
+    body = payload[len(AUTH_PREFIX):].decode("ascii", "ignore")
+    if ":" not in body:
+        raise ProtocolError("AUTH frame missing the ':' between id and MAC")
+    device_id, mac = body.split(":", 1)
+    device_id, mac = device_id.strip(), mac.strip()
+    if not device_id or not mac:
+        raise ProtocolError("AUTH frame has an empty id or MAC")
+    return device_id, mac
+
+
+def build_ok(device_id: str) -> bytes:
+    return OK_PREFIX + device_id.encode("ascii")
+
+
+def build_deny(reason: str) -> bytes:
+    # Deliberately coarse: a precise reason tells an attacker which half of the
+    # guess was wrong ("unknown device" vs "bad MAC").
+    return DENY_PREFIX + reason.encode("ascii")
+
+
 def build_hello(imei: str) -> bytes:
     return HELLO_PREFIX + imei.encode("ascii")
 
@@ -141,8 +188,9 @@ def build_stat(stat: dict) -> bytes:
 def classify(payload: bytes):
     """Classify a frame the way the server does.
 
-    Returns (kind, value) where kind is "hello" | "stat" | "audio":
-        hello -> the IMEI string
+    Returns (kind, value) where kind is "hello" | "auth" | "stat" | "audio":
+        hello -> the device id string
+        auth  -> (device_id, mac_hex)
         stat  -> the decoded dict
         audio -> the raw payload (RTP header still attached)
 
@@ -152,6 +200,8 @@ def classify(payload: bytes):
     """
     if payload.startswith(HELLO_PREFIX):
         return "hello", payload[len(HELLO_PREFIX):].decode("ascii", "ignore").strip() or "unknown"
+    if payload.startswith(AUTH_PREFIX):
+        return "auth", parse_auth(payload)
     if payload.startswith(STAT_PREFIX):
         try:
             return "stat", json.loads(payload[len(STAT_PREFIX):].decode())

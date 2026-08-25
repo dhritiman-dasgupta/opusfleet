@@ -47,8 +47,9 @@ Two details worth calling out, because they come from the device rather than the
   before its CPU looks alarming — lag is the signal that actually correlates with the
   service failing to keep up.
 
-The security row in that diagram is deliberate: this repo's ingest is unauthenticated
-(see [Notes](#notes)), so anything reaching port 6000 can claim any device id. The
+The security row in that diagram is deliberate. Ingest now authenticates devices
+(see [`docs/device-auth.md`](docs/device-auth.md)), but the audio still crosses the
+network in the clear. The
 diagram shows what closing that looks like end to end — per-device X.509 in a secure
 element, mTLS or MQTT to IoT Core instead of plaintext TCP, signed OTA on top of the
 existing sha256-and-rollback supervisor, and Device Defender watching for a unit whose
@@ -184,7 +185,7 @@ Three things worth knowing, found while building this:
 
 - **`opuslib`'s encoder setters silently fail on arm64.** It calls the variadic `opus_encoder_ctl` through ctypes without declaring `argtypes`, so libffi uses the fixed-argument convention. On arm64 variadic arguments travel on the stack while fixed ones travel in registers, and every request returns `OPUS_BAD_ARG`. [`server/opus_ctl.py`](server/opus_ctl.py) declares argtypes for the *fixed* portion only and passes the value as an extra — pinning a full three-argument prototype does **not** work. This affects Apple Silicon and arm64 Linux containers alike.
 - **`audioop` was removed in Python 3.13.** Any audio server importing it for `rms`/`max` stops starting on a modern interpreter. Use numpy.
-- **Ingest is unauthenticated.** Anything that connects and sends `HELLO:<id>` *is* that device. That is what makes the simulator possible, and it means anyone who can reach port 6000 can impersonate a device or poison its recordings. Put it behind a private network, or add a shared secret to the HELLO frame, before exposing it.
+- **Ingest was unauthenticated** — anything that connected and sent `HELLO:<id>` *was* that device. There is now a challenge-response handshake (HMAC-SHA256 over a server-issued nonce), so ids cannot be spoofed and a stolen key burns exactly one device. It ships in `optional` mode so a fleet can migrate gradually; **`AUTH_MODE=required` is the flip that actually closes the hole.** Protocol, rollout and device-side reference code for QuecPython and ESP-IDF are in [`docs/device-auth.md`](docs/device-auth.md). Note it authenticates the device but does not encrypt the audio — only TLS does that.
 
 ## License
 

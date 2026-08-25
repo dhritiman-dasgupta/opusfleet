@@ -38,6 +38,7 @@ import wave
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import opuslib
+from server import auth
 from server import opus_ctl
 from server import protocol as P
 
@@ -131,7 +132,7 @@ class SimDevice:
     def __init__(self, imei, packets, host="127.0.0.1", port=6000, *,
                  loss=0.0, stall=0.0, stall_every=0.0, loop=True,
                  send_hello=True, stat_interval=30.0, ssrc=P.RTP_SSRC,
-                 seed=None, on_event=None):
+                 seed=None, on_event=None, key=None):
         self.imei = imei
         self.packets = packets
         self.host, self.port = host, port
@@ -143,6 +144,7 @@ class SimDevice:
         self.ssrc = ssrc
         self.rng = random.Random(seed if seed is not None else imei)
         self.on_event = on_event or (lambda *a: None)
+        self.key = key            # shared device key; None = legacy, unauthenticated
 
         self.seq = 0
         self.ts = 0
@@ -158,6 +160,37 @@ class SimDevice:
         self.seq = (self.seq + 1) & 0xFFFF
         self.ts = (self.ts + P.FRAME_SAMPLES) & 0xFFFFFFFF
         return wire
+
+    async def _authenticate(self, reader, writer):
+        """Answer the server's challenge, if it issues one and we hold a key.
+
+        A server with AUTH_MODE=disabled sends nothing, so this must not block:
+        we wait briefly, and a device with no key simply proceeds the old way.
+        """
+        try:
+            data = await asyncio.wait_for(reader.read(4096), timeout=3.0)
+        except asyncio.TimeoutError:
+            return                                  # no challenge — legacy server
+        if not data:
+            raise ConnectionError("server closed before the handshake")
+
+        frames, _rest = P.iter_frames(data)
+        if not frames or not frames[0].startswith(P.CHALLENGE_PREFIX):
+            return
+        if self.key is None:
+            self.on_event("noauth", self.imei, "challenged but no key configured")
+            return
+
+        nonce = P.parse_challenge(frames[0])
+        writer.write(P.frame(P.build_auth(self.imei, auth.sign(self.key, nonce))))
+        await writer.drain()
+
+        reply = await asyncio.wait_for(reader.read(4096), timeout=5.0)
+        rframes, _ = P.iter_frames(reply)
+        if rframes and rframes[0].startswith(P.DENY_PREFIX):
+            raise ConnectionError(f"server denied auth: {rframes[0].decode(errors='ignore')}")
+        if rframes and rframes[0].startswith(P.OK_PREFIX):
+            self.on_event("auth", self.imei, "accepted")
 
     async def run(self):
         while not self.stopped:
@@ -175,6 +208,7 @@ class SimDevice:
             asyncio.open_connection(self.host, self.port), timeout=10)
         self.on_event("connect", self.imei, f"{self.host}:{self.port}")
         try:
+            await self._authenticate(reader, writer)
             if self.send_hello:
                 writer.write(P.frame(P.build_hello(self.imei)))
                 await writer.drain()
@@ -249,6 +283,8 @@ def main(argv=None):
     ap.add_argument("--once", action="store_true", help="play the clip once and exit")
     ap.add_argument("--drop-hello", action="store_true", help="never send HELLO")
     ap.add_argument("--duration", type=float, default=0.0, help="stop after N seconds")
+    ap.add_argument("--key", default=None,
+                    help="device key as hex, to answer the server's auth challenge")
     args = ap.parse_args(argv)
 
     t0 = time.time()
@@ -262,6 +298,7 @@ def main(argv=None):
         args.imei, packets, args.host, args.port,
         loss=args.loss, stall=args.stall, stall_every=args.stall_every,
         loop=not args.once, send_hello=not args.drop_hello,
+        key=bytes.fromhex(args.key) if args.key else None,
         on_event=lambda kind, imei, detail: print(f"[{imei}] {kind}: {detail}"),
     )
 
