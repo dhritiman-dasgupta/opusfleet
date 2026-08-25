@@ -1,0 +1,48 @@
+# Single-VPS overlay — no domain required.
+#
+#   docker compose --env-file .env \
+#     -f docker-compose.yml -f deploy/docker-compose.vps.yml up -d --build --scale levels=2
+#
+# Differs from docker-compose.prod.yml: no Caddy, so nothing needs DNS or a
+# certificate yet. Only the device port faces the internet; the API, live
+# WebSocket, MinIO and Kafka bind to loopback and are reached over an SSH tunnel:
+#
+#   ssh -N -L 8080:localhost:8080 -L 9001:localhost:9001 root@<host>
+#
+# Resource limits are set so this can share a box with other workloads without
+# starving them. Verified on 4 vCPU / 16 GB.
+
+services:
+  kafka:
+    ports: !override
+      - "127.0.0.1:29092:29092"
+    environment:
+      KAFKA_HEAP_OPTS: -Xmx2g -Xms2g
+      KAFKA_LOG_RETENTION_HOURS: 12
+      KAFKA_LOG_RETENTION_BYTES: 32212254720
+    deploy:
+      resources:
+        limits: {cpus: "2.0", memory: 4g}
+  minio:
+    ports: !override
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 2g}
+  ingest:
+    ports: !override
+      - "0.0.0.0:6000:6000"
+    deploy:
+      resources:
+        limits: {cpus: "1.5", memory: 1g}
+  live:
+    ports: !override
+      - "127.0.0.1:8081:8081"
+  api:
+    ports: !override
+      - "127.0.0.1:8080:8080"
+  segmenter:
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 2g}
